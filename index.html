@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대전과학고 동문 골프연구회 · 제4회 봄 정기 모임</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f1f15;
+    color: #fff;
+  }
+
+  /* Navigation dots */
+  .nav-dots {
+    position: fixed; right: 16px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 8px; z-index: 100;
+  }
+  .nav-dots a {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(255,255,255,0.25); display: block;
+    transition: all 0.25s;
+  }
+  .nav-dots a.active, .nav-dots a:hover {
+    background: #97BC62; transform: scale(1.4);
+  }
+
+  /* Slides */
+  .slide-container {
+    max-width: 960px; margin: 0 auto;
+    padding: 24px 16px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .slide {
+    width: 100%; border-radius: 8px; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .slide img {
+    width: 100%; height: auto; display: block;
+  }
+  .slide-number {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(0,0,0,0.5); color: #97BC62;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center; padding: 40px 16px 60px;
+    color: rgba(255,255,255,0.35); font-size: 13px;
+  }
+
+  /* Keyboard hint */
+  .hint {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.5);
+    font-size: 12px; padding: 6px 14px; border-radius: 20px;
+    backdrop-filter: blur(6px); z-index: 100;
+    transition: opacity 0.5s; pointer-events: none;
+  }
+
+  /* Fullscreen overlay */
+  .overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.95); cursor: zoom-out;
+    justify-content: center; align-items: center;
+  }
+  .overlay.active { display: flex; }
+  .overlay img {
+    max-width: 95vw; max-height: 95vh; object-fit: contain;
+    border-radius: 4px;
+  }
+  .overlay-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,0.15); border: none; color: #fff;
+    font-size: 28px; width: 48px; height: 48px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .overlay-nav:hover { background: rgba(255,255,255,0.3); }
+  .overlay-nav.prev { left: 16px; }
+  .overlay-nav.next { right: 16px; }
+  .overlay-close {
+    position: absolute; top: 16px; right: 16px;
+    background: none; border: none; color: rgba(255,255,255,0.6);
+    font-size: 32px; cursor: pointer;
+  }
+  .overlay-counter {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.5); font-size: 14px;
+  }
+
+  @media (max-width: 640px) {
+    .nav-dots { right: 8px; gap: 6px; }
+    .nav-dots a { width: 7px; height: 7px; }
+    .slide-container { padding: 12px 8px; gap: 12px; }
+    .slide { border-radius: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav-dots" id="navDots"></nav>
+
+<div class="slide-container" id="slides"></div>
+
+<div class="footer">
+  대전과학고 동문 골프연구회 · 2026.04.11 사우스스프링스CC
+</div>
+
+<div class="hint" id="hint">슬라이드를 탭하면 크게 볼 수 있습니다</div>
+
+<!-- Fullscreen overlay -->
+<div class="overlay" id="overlay">
+  <button class="overlay-close" onclick="closeOverlay()">×</button>
+  <button class="overlay-nav prev" onclick="overlayNav(-1)">‹</button>
+  <img id="overlayImg" src="" alt="">
+  <button class="overlay-nav next" onclick="overlayNav(1)">›</button>
+  <div class="overlay-counter" id="overlayCounter"></div>
+</div>
+
+<script>
+const TOTAL = 13;
+const container = document.getElementById('slides');
+const navDots = document.getElementById('navDots');
+let currentOverlay = 0;
+
+// Build slides & nav dots
+for (let i = 1; i <= TOTAL; i++) {
+  const num = String(i).padStart(2, '0');
+  // Slide
+  const div = document.createElement('div');
+  div.className = 'slide';
+  div.id = 'slide-' + i;
+  div.innerHTML = `<span class="slide-number">${i} / ${TOTAL}</span><img src="images/slide-${num}.jpg" alt="슬라이드 ${i}" loading="lazy">`;
+  div.addEventListener('click', () => openOverlay(i));
+  container.appendChild(div);
+  // Dot
+  const a = document.createElement('a');
+  a.href = '#slide-' + i;
+  a.dataset.idx = i;
+  navDots.appendChild(a);
+}
+
+// Active dot on scroll
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const idx = e.target.id.split('-')[1];
+      document.querySelectorAll('.nav-dots a').forEach(a => a.classList.toggle('active', a.dataset.idx === idx));
+    }
+  });
+}, { threshold: 0.5 });
+document.querySelectorAll('.slide').forEach(s => observer.observe(s));
+
+// Hide hint after 4s
+setTimeout(() => { document.getElementById('hint').style.opacity = '0'; }, 4000);
+
+// Overlay
+function openOverlay(idx) {
+  currentOverlay = idx;
+  updateOverlay();
+  document.getElementById('overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+function overlayNav(dir) {
+  event.stopPropagation();
+  currentOverlay = ((currentOverlay - 1 + dir + TOTAL) % TOTAL) + 1;
+  updateOverlay();
+}
+function updateOverlay() {
+  const num = String(currentOverlay).padStart(2, '0');
+  document.getElementById('overlayImg').src = 'images/slide-' + num + '.jpg';
+  document.getElementById('overlayCounter').textContent = currentOverlay + ' / ' + TOTAL;
+}
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('overlay')) closeOverlay();
+});
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  const ov = document.getElementById('overlay');
+  if (ov.classList.contains('active')) {
+    if (e.key === 'Escape') closeOverlay();
+    if (e.key === 'ArrowLeft') overlayNav(-1);
+    if (e.key === 'ArrowRight') overlayNav(1);
+  }
+});
+</script>
+</body>
+</html>
